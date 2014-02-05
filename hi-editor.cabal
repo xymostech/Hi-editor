@@ -12,7 +12,7 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 executable hi-editor
-  main-is:             Hi.hs
+  main-is:             Main.hs
   build-depends:       base >=4.6 && <4.7,
                        hscurses >=1.4,
                        transformers >=0.3

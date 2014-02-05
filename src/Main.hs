@@ -1,3 +1,5 @@
+module Main where
+
 import UI.HSCurses.Curses
 import Control.Concurrent
 import Foreign.C.Types
@@ -6,6 +8,8 @@ import Control.Monad
 import Control.Monad.Trans.State
 import Control.Monad.IO.Class
 import Prelude hiding (lines)
+
+import AppState
 
 cursesSetup :: IO ()
 cursesSetup = do
@@ -25,23 +29,6 @@ isPrintableCharacter char =
   where
     space = ord ' '
     tilde = ord '~'
-
-data Mode = Normal | Insert
-  deriving Show
-
-data AppState = AppState
-  { stateLines :: [[Char]]
-  , statePosition :: (Int, Int)
-  , stateMode :: Mode
-  }
-  deriving Show
-
-makeState :: AppState
-makeState = AppState
-  { stateLines = [""]
-  , statePosition = (0, 0)
-  , stateMode = Normal
-  }
 
 modifyPosition :: Int -> (a -> a) -> [a] -> [a]
 modifyPosition _ _ [] = []

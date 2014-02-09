@@ -15,6 +15,7 @@ executable hi-editor
   main-is:             Main.hs
   build-depends:       base >=4.6 && <4.7,
                        hscurses >=1.4,
-                       transformers >=0.3
+                       transformers >=0.3,
+                       containers >=0.5
   hs-source-dirs:      src
   default-language:    Haskell2010

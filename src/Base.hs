@@ -1,6 +1,7 @@
 module Base where
 
 import Data.Char
+import qualified Data.Map as Map
 
 import AppState
 import Util
@@ -49,3 +50,15 @@ normalMode state = state{stateMode = Normal}
 insertMode :: AppState -> AppState
 insertMode state =
   state{stateMode = Insert}
+
+addInsertMapping :: Int -> (AppState -> AppState) -> AppState -> AppState
+addInsertMapping char func state@AppState{insertMapping = mapping} =
+  state{insertMapping = mapping'}
+  where
+    mapping' = Map.insert char func mapping
+
+addNormalMapping :: Int -> (AppState -> AppState) -> AppState -> AppState
+addNormalMapping char func state@AppState{normalMapping = mapping} =
+  state{normalMapping = mapping'}
+  where
+    mapping' = Map.insert char func mapping

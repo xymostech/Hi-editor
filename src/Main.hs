@@ -8,36 +8,41 @@ import Control.Monad.Trans.State
 import Control.Monad.IO.Class
 import Data.Char
 import Prelude hiding (lines)
+import qualified Data.Map as Map
 
 import AppState
 import Base
 
-isPrintableCharacter :: Int -> Bool
-isPrintableCharacter char =
-  (char >= space && char <= tilde)
+addDefaultBindings :: AppState -> AppState
+addDefaultBindings state =
+  foldl (\s (mode, char, func) -> (modeFunc mode) char func s) state $
+    [ (Normal, ord 'i', insertMode)
+    , (Normal, ord 'a', moveRight . insertMode)
+    , (Normal, ord 'h', moveLeft)
+    , (Normal, ord 'l', moveRight)
+    , (Normal, ord 'k', moveUp)
+    , (Normal, ord 'j', moveDown)
+    , (Insert, 127, removeChar)
+    , (Insert, 10, addLine)
+    , (Insert, 27, moveLeft . normalMode)
+    ] ++
+    [(Insert, c, addChar c) | c <- [(ord ' ')..(ord '~')]]
   where
-    space = ord ' '
-    tilde = ord '~'
+    modeFunc Insert = addInsertMapping
+    modeFunc Normal = addNormalMapping
 
 handleChar :: CInt -> AppState -> AppState
-handleChar cchar state@(AppState{stateMode = Insert})
-  | isPrintableCharacter char = addChar char state
-  | char == 127 = removeChar state
-  | char == 10 = addLine state
-  | char == 27 = moveLeft . normalMode $ state
-  | otherwise = state
+handleChar cchar state@(AppState{stateMode = mode}) =
+  case currMapping of
+    Just func -> func state
+    Nothing -> state
   where
     char = fromIntegral cchar
-handleChar cchar state@(AppState{stateMode = Normal})
-  | char == ord 'a' = moveRight . insertMode $ state
-  | char == ord 'i' = insertMode state
-  | char == ord 'h' = moveLeft state
-  | char == ord 'l' = moveRight state
-  | char == ord 'k' = moveUp state
-  | char == ord 'j' = moveDown state
-  | otherwise = state
-  where
-    char = fromIntegral cchar
+
+    mapping Normal = normalMapping state
+    mapping Insert = insertMapping state
+
+    currMapping = Map.lookup char $ mapping mode
 
 cursesSetup :: IO ()
 cursesSetup = do
@@ -73,5 +78,5 @@ loop = do
 main :: IO ()
 main = do
   cursesSetup
-  runStateT loop makeState
+  runStateT loop $ addDefaultBindings makeState
   cursesCleanup

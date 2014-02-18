@@ -51,24 +51,37 @@ insertMode :: AppState -> AppState
 insertMode state =
   state{stateMode = Insert}
 
-addInsertMapping :: Int -> (AppState -> AppState) -> AppState -> AppState
-addInsertMapping char func state@AppState{insertMapping = mapping} =
+addInsertMappingIO :: Int -> (AppState -> IO AppState) -> AppState -> AppState
+addInsertMappingIO char func state@AppState{insertMapping = mapping} =
   state{insertMapping = mapping'}
   where
-    mapping' = Map.insert char (return . func) mapping
+    mapping' = Map.insert char func mapping
 
-addNormalMapping :: Int -> (AppState -> AppState) -> AppState -> AppState
-addNormalMapping char func state@AppState{normalMapping = mapping} =
+addNormalMappingIO :: Int -> (AppState -> IO AppState) -> AppState -> AppState
+addNormalMappingIO char func state@AppState{normalMapping = mapping} =
   state{normalMapping = mapping'}
   where
-    mapping' = Map.insert char (return . func) mapping
+    mapping' = Map.insert char func mapping
+
+addInsertMapping :: Int -> (AppState -> AppState) -> AppState -> AppState
+addInsertMapping char func = addInsertMappingIO char (return . func)
+
+addNormalMapping :: Int -> (AppState -> AppState) -> AppState -> AppState
+addNormalMapping char func = addNormalMappingIO char (return . func)
 
 loadFile :: String -> AppState -> IO AppState
 loadFile path state = do
   file <- readFile path
-  return state{stateLines = lines file, statePosition = (0, 0)}
+  return state{stateFilePath = Just path, stateLines = lines file,
+               statePosition = (0, 0)}
 
-saveFile :: String -> AppState -> IO AppState
-saveFile path state@AppState{stateLines = lines} = do
-  writeFile path $ unlines lines
-  return state
+saveFile :: Maybe String -> AppState -> IO AppState
+saveFile maybePath state@AppState{stateFilePath = currPath, stateLines = lines} =
+  case (maybePath, currPath) of
+    (Nothing, Nothing) -> return state
+    (Just path, _) -> do
+      writeFile path $ unlines lines
+      return state{stateFilePath = Just path}
+    (Nothing, Just path) -> do
+      writeFile path $ unlines lines
+      return state

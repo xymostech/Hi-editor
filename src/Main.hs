@@ -1,14 +1,15 @@
 module Main where
 
-import UI.HSCurses.Curses
+import Control.Applicative
 import Control.Concurrent
-import Foreign.C.Types
 import Control.Monad
-import Control.Monad.Trans.State
 import Control.Monad.IO.Class
+import Control.Monad.Trans.State
 import Data.Char
+import Foreign.C.Types
 import Prelude hiding (lines)
 import qualified Data.Map as Map
+import UI.HSCurses.Curses
 
 import AppState
 import Base

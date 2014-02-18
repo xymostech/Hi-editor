@@ -9,8 +9,8 @@ data AppState = AppState
   { stateLines :: [[Char]]
   , statePosition :: (Int, Int)
   , stateMode :: Mode
-  , insertMapping :: Map.Map Int (AppState -> AppState)
-  , normalMapping :: Map.Map Int (AppState -> AppState)
+  , insertMapping :: Map.Map Int (AppState -> IO AppState)
+  , normalMapping :: Map.Map Int (AppState -> IO AppState)
   }
 
 makeState :: AppState

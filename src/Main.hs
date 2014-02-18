@@ -32,11 +32,11 @@ addDefaultBindings state =
     modeFunc Insert = addInsertMapping
     modeFunc Normal = addNormalMapping
 
-handleChar :: CInt -> AppState -> AppState
+handleChar :: CInt -> AppState -> IO AppState
 handleChar cchar state@(AppState{stateMode = mode}) =
   case currMapping of
     Just func -> func state
-    Nothing -> state
+    Nothing -> return state
   where
     char = fromIntegral cchar
 
@@ -73,7 +73,9 @@ loop :: StateT AppState IO ()
 loop = do
   draw
   key <- liftIO getch
-  modify $ handleChar key
+  currState <- get
+  newState <- liftIO $ handleChar key currState
+  put newState
   when (key /= 3) loop
 
 main :: IO ()

@@ -55,10 +55,20 @@ addInsertMapping :: Int -> (AppState -> AppState) -> AppState -> AppState
 addInsertMapping char func state@AppState{insertMapping = mapping} =
   state{insertMapping = mapping'}
   where
-    mapping' = Map.insert char func mapping
+    mapping' = Map.insert char (return . func) mapping
 
 addNormalMapping :: Int -> (AppState -> AppState) -> AppState -> AppState
 addNormalMapping char func state@AppState{normalMapping = mapping} =
   state{normalMapping = mapping'}
   where
-    mapping' = Map.insert char func mapping
+    mapping' = Map.insert char (return . func) mapping
+
+loadFile :: String -> AppState -> IO AppState
+loadFile path state = do
+  file <- readFile path
+  return state{stateLines = lines file, statePosition = (0, 0)}
+
+saveFile :: String -> AppState -> IO AppState
+saveFile path state@AppState{stateLines = lines} = do
+  writeFile path $ unlines lines
+  return state

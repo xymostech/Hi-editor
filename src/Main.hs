@@ -16,34 +16,28 @@ import qualified Data.Map as Map
 import AppState
 import Base
 
-pureBindings =
-  [ (Normal, ord 'i', insertMode)
-  , (Normal, ord 'a', moveRight . insertMode)
-  , (Normal, ord 'h', moveLeft)
-  , (Normal, ord 'l', moveRight)
-  , (Normal, ord 'k', moveUp)
-  , (Normal, ord 'j', moveDown)
-  , (Insert, 127, removeChar)
-  , (Insert, 10, addLine)
-  , (Insert, 27, moveLeft . normalMode)
+bindings =
+  [ (Normal, ord 'i', return . insertMode)
+  , (Normal, ord 'a', modifyCurrBuffer (return . moveRight Insert) . insertMode)
+  , (Normal, ord 'h', modifyCurrBuffer (return . moveLeft))
+  , (Normal, ord 'l', modifyCurrBuffer (return . moveRight Normal))
+  , (Normal, ord 'k', modifyCurrBuffer (return . moveUp))
+  , (Normal, ord 'j', modifyCurrBuffer (return . moveDown))
+  , (Normal, ord 's', saveFile Nothing)
+  , (Insert, 127, modifyCurrBuffer (return . removeChar))
+  , (Insert, 10, modifyCurrBuffer (return . addLine))
+  , (Insert, 27, modifyCurrBuffer (return . moveLeft) . normalMode)
   ] ++
-  [(Insert, c, addChar c) | c <- [(ord ' ')..(ord '~')]]
-
-ioBindings =
-  [ (Normal, ord 's', saveFile Nothing)
-  ]
+  [(Insert, c, modifyCurrBuffer (return . addChar c)) |
+      c <- [(ord ' ')..(ord '~')]]
 
 addDefaultBindings :: AppState -> AppState
 addDefaultBindings state =
   foldl (\s (mode, char, func) -> (addMappingFunc mode) char func s)
-    (foldl (\s (mode, char, func) -> (addMappingFuncIO mode) char func s)
-      state ioBindings)
-    pureBindings
+    state bindings
   where
     addMappingFunc Insert = addInsertMapping
     addMappingFunc Normal = addNormalMapping
-    addMappingFuncIO Insert = addInsertMappingIO
-    addMappingFuncIO Normal = addNormalMappingIO
 
 handleChar :: CInt -> AppState -> IO AppState
 handleChar cchar state@(AppState{stateMode = mode}) =
@@ -53,8 +47,8 @@ handleChar cchar state@(AppState{stateMode = mode}) =
   where
     char = fromIntegral cchar
 
-    mapping Normal = normalMapping state
-    mapping Insert = insertMapping state
+    mapping Normal = stateNormalMapping state
+    mapping Insert = stateInsertMapping state
 
     currMapping = Map.lookup char $ mapping mode
 
@@ -76,8 +70,8 @@ drawLine line = wAddStr stdScr line >> addLn
 draw :: StateT AppState IO ()
 draw = do
   liftIO $ erase
-  l <- gets stateLines
-  (r,c) <- gets statePosition
+  l <- gets $ bufferLines . getCurrBuffer
+  (r,c) <- gets $ bufferPosition . getCurrBuffer
   liftIO $ mapM_ drawLine l
   liftIO $ wMove stdScr r c
   liftIO $ update
